@@ -1,25 +1,25 @@
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 import { Label, Input, Button, FormEl } from './Form.styled';
-import { addContact } from 'redux/operations';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectContacts } from 'redux/selectors';
 import { PhoneInputEnhanced } from './Form.styled';
 import { isPossiblePhoneNumber } from 'react-phone-number-input';
 import { PhoneInputContainer } from './Form.styled';
 import { Warning } from './Form.styled';
+import {
+  useAddContactMutation,
+  useGetContactsQuery,
+} from 'redux/contactsSlice';
 import 'react-phone-number-input/style.css';
 
-export function Form() {
+export function Form({ onAddContact }) {
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
 
   const nameInputId = nanoid();
   const numberInputId = nanoid();
 
-  const dispatch = useDispatch();
-
-  const contacts = useSelector(selectContacts);
+  const { data: contacts, isLoading } = useGetContactsQuery();
+  const [addContact, addResult] = useAddContactMutation();
 
   const handleSubmit = event => {
     event.preventDefault();
@@ -40,7 +40,11 @@ export function Form() {
       alert('Enter a correct phone number, please');
       return;
     } else {
-      dispatch(addContact({ name, number }));
+      try {
+        addContact({ name, number });
+      } catch (error) {
+        console.log(error.message);
+      }
     }
 
     setName('');
@@ -89,7 +93,9 @@ export function Form() {
           number !== '' &&
           number !== undefined && <Warning>Impossible number.</Warning>}
       </PhoneInputContainer>
-      <Button type="submit">Add contact</Button>
+      <Button type="submit" disabled={addResult.isLoading || isLoading}>
+        Add contact
+      </Button>
     </FormEl>
   );
 }

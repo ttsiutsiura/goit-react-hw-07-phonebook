@@ -4,41 +4,62 @@ import { ContactsCaption } from './Contacts.styled';
 import { Filter } from 'components/Filter/Filter';
 import { ListItem } from './Contacts.styled';
 import { DeleteButton } from 'components/Contacts/Contacts.styled';
-import { deleteContact } from 'redux/operations';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  selectContactsCount,
-  selectIsLoading,
-  selectVisibleContacts,
-} from 'redux/selectors';
+import { useSelector } from 'react-redux';
+import { selectFilterValue } from 'redux/selectors';
 import { ThreeDots } from 'react-loader-spinner';
+import {
+  useDeleteContactMutation,
+  useGetContactsQuery,
+} from 'redux/contactsSlice';
 
 export function Contacts() {
-  const dispatch = useDispatch();
+  const { data: contacts, isLoading } = useGetContactsQuery();
+  const [deleteContact, deleteResult] = useDeleteContactMutation();
 
-  const isloading = useSelector(selectIsLoading);
+  const filterValue = useSelector(selectFilterValue);
 
-  const visibleContacts = useSelector(selectVisibleContacts);
-  const contactsCount = useSelector(selectContactsCount);
+  const handleDeleteContact = id => {
+    try {
+      deleteContact(id);
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  const getVisibleContacts = (contacts, filterValue) => {
+    if (!isLoading) {
+      const normalizedFilter = filterValue.toLowerCase();
+
+      return contacts.filter(contact =>
+        contact.name.toLowerCase().includes(normalizedFilter)
+      );
+    }
+  };
+
+  const visibleContacts = getVisibleContacts(contacts, filterValue);
 
   return (
     <>
-      {<ContactsCaption>Contacts: {contactsCount}</ContactsCaption>}
+      {
+        <ContactsCaption>
+          Contacts: {isLoading ? '0' : `${contacts.length}`}
+        </ContactsCaption>
+      }
       {<Filter />}
-      {visibleContacts.length === 0 && isloading === false && (
-        <p>No contacts.</p>
+      {contacts?.length === 0 && isLoading === false && (
+        <p style={{ height: 38 }}>No contacts.</p>
       )}
       <ThreeDots
-        height="34.5"
-        width="34.5"
+        height="38"
+        width="38"
         radius="9"
         color="black"
         ariaLabel="three-dots-loading"
         wrapperStyle={{}}
         wrapperClassName=""
-        visible={isloading}
+        visible={isLoading}
       />
-      {isloading === false && (
+      {!isLoading && (
         <ContactList>
           {visibleContacts.map(contact => (
             <ListItem key={contact.id}>
@@ -47,8 +68,9 @@ export function Contacts() {
               </p>
               <DeleteButton
                 type="button"
-                onClick={() => dispatch(deleteContact(contact.id))}
+                onClick={() => handleDeleteContact(contact.id)}
                 key={nanoid()}
+                disabled={deleteResult.isLoading}
               >
                 Delete
               </DeleteButton>

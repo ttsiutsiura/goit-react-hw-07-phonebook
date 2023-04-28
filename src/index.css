@@ -31,3 +31,7 @@ input {
   border-style: solid;
   border-color: black;
 }
+
+button {
+  border-style: solid;
+}
